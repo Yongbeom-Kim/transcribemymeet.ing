@@ -13,6 +13,11 @@ variable "service" {
   description = "The service name of this microservice."
 }
 
+variable "domain" {
+  type        = string
+  description = "The domain name of the frontend."
+}
+
 variable "tf_backend_bucket" {
   type        = string
   description = "The name of the bucket to store the Terraform state file"
@@ -26,8 +31,8 @@ terraform {
     }
   }
   backend "gcs" {
-    bucket  = var.tf_backend_bucket
-    prefix  = "terraform/state/${var.service}"
+    bucket = var.tf_backend_bucket
+    prefix = "terraform/state/${var.service}"
   }
 }
 
@@ -35,5 +40,10 @@ provider "google" {
   # Configuration options
   project = var.project
   region  = var.region
+}
 
+provider "google-beta" {
+  # Configuration options
+  project = var.project
+  region  = var.region
 }

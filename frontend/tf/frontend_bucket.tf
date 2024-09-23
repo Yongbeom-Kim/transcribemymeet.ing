@@ -1,6 +1,6 @@
 variable "frontend_bucket_name" {
-    type        = string
-    description = "The name of the bucket to store the frontend files"
+  type        = string
+  description = "The name of the bucket to store the frontend files"
 }
 
 resource "google_storage_bucket" "frontend" {
