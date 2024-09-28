@@ -19,6 +19,8 @@ import (
 	"google.golang.org/api/option"
 )
 
+const PRESIGNED_URL_DURATION = 5 * time.Minute
+
 func generateRandomKey() string {
 	randomBytes := make([]byte, 16)
 	_, err := rand.Read(randomBytes)
@@ -37,7 +39,7 @@ func TestPresignUploadURL(t *testing.T) {
 	credentialsFile := gcloud.GetCredentialsFile()
 
 	// 1. Generate presigned URL
-	url, err := gcloud.PresignUploadURL(ctx, key)
+	url, err := gcloud.PresignUploadURL(ctx, key, PRESIGNED_URL_DURATION)
 	if err != nil {
 		t.Fatalf("Failed to generate presigned URL: %v", err)
 	}
@@ -105,7 +107,7 @@ func TestPresignUploadDownloadURLFile(t *testing.T) {
 	}
 
 	// Generate presigned upload URL
-	uploadURL, err := gcloud.PresignUploadURL(ctx, key)
+	uploadURL, err := gcloud.PresignUploadURL(ctx, key, PRESIGNED_URL_DURATION)
 	if err != nil {
 		t.Fatalf("Failed to generate presigned upload URL: %v", err)
 	}
@@ -129,7 +131,7 @@ func TestPresignUploadDownloadURLFile(t *testing.T) {
 	}
 
 	// Generate presigned download URL
-	downloadURL, err := gcloud.PresignDownloadURL(ctx, key)
+	downloadURL, err := gcloud.PresignDownloadURL(ctx, key, PRESIGNED_URL_DURATION)
 	if err != nil {
 		t.Fatalf("Failed to generate presigned download URL: %v", err)
 	}
@@ -208,7 +210,7 @@ func TestPresignDownloadURL(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// 2. Generate download URL for the file
-	downloadURL, err := gcloud.PresignDownloadURL(ctx, key)
+	downloadURL, err := gcloud.PresignDownloadURL(ctx, key, PRESIGNED_URL_DURATION)
 	if err != nil {
 		t.Fatalf("Failed to generate presigned download URL: %v", err)
 	}
@@ -338,7 +340,7 @@ func TestMultipartUploadFile(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					url, err := gcloud.GetUploadPartURL(ctx, key, uploadID, i)
+					url, err := gcloud.GetUploadPartURL(ctx, uploadID, i, PRESIGNED_URL_DURATION)
 					if err != nil {
 						errChan <- fmt.Sprintf("Failed to get upload URL for part %d: %v", i, err)
 					}
@@ -388,7 +390,7 @@ func TestMultipartUploadFile(t *testing.T) {
 				}
 			}()
 
-			downloadURL, err := gcloud.PresignDownloadURL(ctx, key)
+			downloadURL, err := gcloud.PresignDownloadURL(ctx, key, PRESIGNED_URL_DURATION)
 			if err != nil {
 				t.Fatalf("Failed to get download URL: %v", err)
 			}

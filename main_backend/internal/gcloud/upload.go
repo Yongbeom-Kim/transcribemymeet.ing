@@ -29,7 +29,7 @@ var GetBucket = sync.OnceValue(func() string {
 	return GetEnv("TF_VAR_resource_name")
 })
 
-func PresignUploadURL(ctx context.Context, key string) (string, error) {
+func PresignUploadURL(ctx context.Context, key string, duration time.Duration) (string, error) {
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile(GetCredentialsFile()))
 	if err != nil {
@@ -40,7 +40,7 @@ func PresignUploadURL(ctx context.Context, key string) (string, error) {
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "PUT",
-		Expires: time.Now().Add(15 * time.Minute),
+		Expires: time.Now().Add(duration),
 	}
 
 	url, err := client.Bucket(GetBucket()).SignedURL(key, opts)
@@ -51,7 +51,7 @@ func PresignUploadURL(ctx context.Context, key string) (string, error) {
 	return url, nil
 }
 
-func PresignDownloadURL(ctx context.Context, key string) (string, error) {
+func PresignDownloadURL(ctx context.Context, key string, duration time.Duration) (string, error) {
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile(GetCredentialsFile()))
 	if err != nil {
 		return "", err
@@ -61,7 +61,7 @@ func PresignDownloadURL(ctx context.Context, key string) (string, error) {
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "GET",
-		Expires: time.Now().Add(15 * time.Minute),
+		Expires: time.Now().Add(duration),
 	}
 
 	url, err := client.Bucket(GetBucket()).SignedURL(key, opts)
@@ -103,20 +103,20 @@ func StartMultipartUpload(ctx context.Context, key string) (uploadID string, err
 	return hex.EncodeToString(randomBytes), nil
 }
 
-func generatePartKey(key string, uploadID string, partNumber int) (string, error) {
+func generatePartKey(uploadID string, partNumber int) (string, error) {
 	if partNumber < 0 || partNumber > 31 {
 		return "", fmt.Errorf("part number must be between 0 and 31, got %d", partNumber)
 	}
-	return fmt.Sprintf("%s-%s-part%d", key, uploadID, partNumber), nil
+	return fmt.Sprintf("%s-part%d", uploadID, partNumber), nil
 }
 
-func GetUploadPartURL(ctx context.Context, key string, uploadID string, partNumber int) (url string, err error) {
-	partKey, err := generatePartKey(key, uploadID, partNumber)
+func GetUploadPartURL(ctx context.Context, uploadID string, partNumber int, duration time.Duration) (url string, err error) {
+	partKey, err := generatePartKey(uploadID, partNumber)
 	if err != nil {
 		return "", err
 	}
 
-	url, err = PresignUploadURL(ctx, partKey)
+	url, err = PresignUploadURL(ctx, partKey, duration)
 	if err != nil {
 		return "", err
 	}
@@ -133,7 +133,7 @@ func CompleteMultipartUpload(ctx context.Context, key string, uploadID string, p
 
 	// 1. Check that all parts are uploaded
 	for partNumber := 0; partNumber < parts; partNumber++ {
-		partKey, err := generatePartKey(key, uploadID, partNumber)
+		partKey, err := generatePartKey(uploadID, partNumber)
 		if err != nil {
 			return fmt.Errorf("failed to generate part key: %v", err)
 		}
@@ -151,7 +151,7 @@ func CompleteMultipartUpload(ctx context.Context, key string, uploadID string, p
 	// 2. Compose all objects into one object
 	var sourceObjects []*storage.ObjectHandle
 	for partNumber := 0; partNumber < parts; partNumber++ {
-		partKey, err := generatePartKey(key, uploadID, partNumber)
+		partKey, err := generatePartKey(uploadID, partNumber)
 		if err != nil {
 			return fmt.Errorf("failed to generate part key: %v", err)
 		}
@@ -168,7 +168,7 @@ func CompleteMultipartUpload(ctx context.Context, key string, uploadID string, p
 	// 3. Delete all parts
 	// TODO: parallelize this
 	for partNumber := 0; partNumber < parts; partNumber++ {
-		partKey, err := generatePartKey(key, uploadID, partNumber)
+		partKey, err := generatePartKey(uploadID, partNumber)
 		if err != nil {
 			return fmt.Errorf("failed to generate part key: %v", err)
 		}
