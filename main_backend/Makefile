@@ -12,6 +12,12 @@ destroy: infra_destroy ## Destroy the backend infrastructure
 
 test: ## Run tests
 	. ./source.sh && \
+		TF_VAR_backend_identity_key=$$(realpath $${TF_VAR_backend_identity_key}) && \
+		go test ./...
+
+integration_test: ## Run integration tests
+	. ./source.sh && \
+		cd test && \
 		go test ./...
 
 tofu_run_cmd: ## Run a tofu command. Usage: make tofu_run_cmd CMD="command"
@@ -20,6 +26,19 @@ tofu_run_cmd: ## Run a tofu command. Usage: make tofu_run_cmd CMD="command"
 		tofu init && \
 		tofu workspace select -or-create $${TERRAFORM_WORKSPACE} && \
 		tofu $(CMD)
+
+local: ## Run the backend locally
+	. ./source.sh && \
+		docker run -p $${PORT}:$${PORT} transcribemymeet.ing-backend # TODO: this needs to be the image name for a gcloud docker repo
+
+code_build: ## Build the backend code
+	. ./source.sh && \
+		docker build \
+			-t transcribemymeet.ing-backend \
+			--build-arg TF_VAR_backend_identity_key=$${TF_VAR_backend_identity_key} \
+			--build-arg TF_VAR_resource_name=$${TF_VAR_resource_name} \
+			.
+
 
 code_deploy: ## Deploy the backend code
 
