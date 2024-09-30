@@ -4,6 +4,11 @@ tofu_run_cmd:
 	tofu init && \
 	tofu $(CMD)
 
+code_deploy:
+	yarn
+	yarn run build
+
+
 infra_deploy:
 	$(MAKE) tofu_run_cmd CMD="apply -auto-approve"
 
