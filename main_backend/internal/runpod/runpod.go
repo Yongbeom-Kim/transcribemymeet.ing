@@ -29,20 +29,25 @@ var RUNPOD_API_KEY = sync.OnceValue(func() string {
 	return key
 })
 
+type WebHook string
+type ExecutionPolicy struct {
+	Timeout    int `json:"executionTimeout"`
+	Priority   int `json:"priority"`
+	TimeToLive int `json:"ttl"`
+}
+
+type S3Config struct {
+	AccessId     string `json:"accessId"`
+	AccessSecret string `json:"accessSecret"`
+	BucketName   string `json:"bucketName"`
+	EndpointURL  string `json:"endpointUrl"`
+}
+
 type RunRequest struct {
-	Input           interface{} `json:"input"`
-	WebHook         string      `json:"webhook"`
-	ExecutionPolicy struct {
-		Timeout    int `json:"executionTimeout"`
-		Priority   int `json:"priority"`
-		TimeToLive int `json:"ttl"`
-	} `json:"policy"`
-	S3Config struct {
-		AccessId     string `json:"accessId"`
-		AccessSecret string `json:"accessSecret"`
-		BucketName   string `json:"bucketName"`
-		EndpointURL  string `json:"endpointUrl"`
-	} `json:"s3Config"`
+	Input           interface{}     `json:"input"`
+	WebHook         WebHook         `json:"webhook,omitempty"`
+	ExecutionPolicy ExecutionPolicy `json:"policy,omitempty"`
+	S3Config        S3Config        `json:"s3Config,omitempty"`
 }
 
 type AsyncRunResponse struct {
@@ -50,12 +55,16 @@ type AsyncRunResponse struct {
 	Status string `json:"status"`
 }
 
+type BaseSyncRunResponse struct {
+	DelayTime     int    `json:"delayTime"`
+	ExecutionTime int    `json:"executionTime"`
+	JobId         string `json:"id"`
+	Status        string `json:"status"`
+}
+
 type SyncRunResponse struct {
-	DelayTime     int         `json:"delayTime"`
-	ExecutionTime int         `json:"executionTime"`
-	JobId         string      `json:"id"`
-	Status        string      `json:"status"`
-	Output        interface{} `json:"output"`
+	BaseSyncRunResponse
+	Output map[string]interface{} `json:"output"`
 }
 
 func Run(workerURL string, runRequest RunRequest) (*AsyncRunResponse, error) {
