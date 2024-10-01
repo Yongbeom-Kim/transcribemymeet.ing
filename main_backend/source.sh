@@ -2,6 +2,8 @@
 
 set -a
 
+. ./.env
+
 if [[ -f ../source.sh ]]; then
 	. ../source.sh
 fi
