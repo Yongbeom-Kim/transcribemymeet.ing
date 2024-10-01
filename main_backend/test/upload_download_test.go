@@ -15,7 +15,7 @@ import (
 
 func TestUpload(t *testing.T) {
 	ctx := context.Background()
-	endpoint, teardown := setup(&ctx)
+	endpoint, teardown := setup(&ctx, t)
 	defer teardown()
 
 	// Start multipart upload

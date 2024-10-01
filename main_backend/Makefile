@@ -18,7 +18,7 @@ test: ## Run tests
 integration_test: ## Run integration tests
 	. ./source.sh && \
 		cd test && \
-		go test ./...
+		go test -count=1 ./...
 
 tofu_run_cmd: ## Run a tofu command. Usage: make tofu_run_cmd CMD="command"
 	. ./source.sh && \
@@ -29,14 +29,18 @@ tofu_run_cmd: ## Run a tofu command. Usage: make tofu_run_cmd CMD="command"
 
 local: ## Run the backend locally
 	. ./source.sh && \
-		docker run -p $${PORT}:$${PORT} transcribemymeet.ing-backend # TODO: this needs to be the image name for a gcloud docker repo
+		docker run \
+			-p $${PORT}:$${PORT} # TODO: this needs to be the image name for a gcloud docker repo
+			-e TF_VAR_backend_identity_key=$${TF_VAR_backend_identity_key} \
+			-e TF_VAR_resource_name=$${TF_VAR_resource_name} \
+			-e RUNPOD_WHISPER_URL=$${RUNPOD_WHISPER_URL} \
+			-e RUNPOD_API_KEY=$${RUNPOD_API_KEY} \
+			transcribemymeet.ing-backend
 
 code_build: ## Build the backend code
 	. ./source.sh && \
 		docker build \
 			-t transcribemymeet.ing-backend \
-			--build-arg TF_VAR_backend_identity_key=$${TF_VAR_backend_identity_key} \
-			--build-arg TF_VAR_resource_name=$${TF_VAR_resource_name} \
 			.
 
 

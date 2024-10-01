@@ -28,6 +28,12 @@ resource "google_storage_bucket_iam_member" "bucket_identity_member" {
   member = "serviceAccount:${google_service_account.bucket_identity.email}"
 }
 
+resource "google_project_iam_member" "bucket_identity_member" {
+  project = var.project
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${google_service_account.bucket_identity.email}"
+}
+
 resource "random_id" "key_rotator" {
   byte_length = 8
   keepers = {
@@ -48,6 +54,12 @@ resource "google_service_account_key" "bucket_identity_key" {
 
 resource "local_file" "bucket_identity_key" {
   content  = base64decode(google_service_account_key.bucket_identity_key.private_key)
-  filename = var.backend_identity_key
+  filename = "${path.module}/../${var.backend_identity_key}"
+
+  lifecycle {
+    replace_triggered_by = [ 
+      google_service_account_key.bucket_identity_key
+     ]
+  }
 }
 

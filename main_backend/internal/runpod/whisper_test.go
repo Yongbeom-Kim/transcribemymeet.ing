@@ -57,7 +57,7 @@ func TestWhisperCancel(t *testing.T) {
 }
 
 func TestWhisperHealthCheck(t *testing.T) {
-	response, err := runpod.WhisperHealthCheck(RUNPOD_WHISPER_URL())
+	response, err := runpod.WhisperHealthCheck()
 	if err != nil {
 		t.Fatalf("Failed to health check: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestWhisperHealthCheck(t *testing.T) {
 }
 
 func TestWhisperPurgeQueue(t *testing.T) {
-	response, err := runpod.WhisperPurgeQueue(RUNPOD_WHISPER_URL())
+	response, err := runpod.WhisperPurgeQueue()
 	if err != nil {
 		t.Fatalf("Failed to purge queue: %v", err)
 	}

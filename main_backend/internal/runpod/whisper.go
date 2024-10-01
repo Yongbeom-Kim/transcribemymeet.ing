@@ -85,6 +85,11 @@ type WhisperSyncRunResponse struct {
 	Output WhisperModelOutput `json:"output"`
 }
 
+type WhisperStatusResponse struct {
+	BaseStatusResponse
+	Output WhisperModelOutput `json:"output,omitempty"`
+}
+
 func WhisperRun(input WhisperModelInput, webhook *WebHook, policy *ExecutionPolicy, s3Config *S3Config) (*AsyncRunResponse, error) {
 	runRequest := RunRequest{
 		Input: input,
@@ -146,12 +151,24 @@ func WhisperRunSync(input WhisperModelInput, webhook *WebHook, policy *Execution
 	return &whisperOutput, nil
 }
 
-func WhisperStatus(jobId string) (*StatusResponse, error) {
+func WhisperStatus(jobId string) (*WhisperStatusResponse, error) {
 	statusResponse, err := Status(RUNPOD_WHISPER_URL(), jobId)
 	if err != nil {
 		return nil, err
 	}
-	return statusResponse, nil
+
+	outputJSON, err := json.Marshal(statusResponse)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling response output: %w", err)
+	}
+
+	var whisperStatus WhisperStatusResponse
+	err = json.Unmarshal(outputJSON, &whisperStatus)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling transcription: %w", err)
+	}
+
+	return &whisperStatus, nil
 }
 
 func WhisperCancel(jobId string) (*CancelResponse, error) {
@@ -162,16 +179,16 @@ func WhisperCancel(jobId string) (*CancelResponse, error) {
 	return cancelResponse, nil
 }
 
-func WhisperHealthCheck(workerURL string) (*HealthCheckResponse, error) {
-	healthCheckResponse, err := HealthCheck(workerURL)
+func WhisperHealthCheck() (*HealthCheckResponse, error) {
+	healthCheckResponse, err := HealthCheck(RUNPOD_WHISPER_URL())
 	if err != nil {
 		return nil, err
 	}
 	return healthCheckResponse, nil
 }
 
-func WhisperPurgeQueue(workerURL string) (*PurgeQueueResponse, error) {
-	purgeQueueResponse, err := PurgeQueue(workerURL)
+func WhisperPurgeQueue() (*PurgeQueueResponse, error) {
+	purgeQueueResponse, err := PurgeQueue(RUNPOD_WHISPER_URL())
 	if err != nil {
 		return nil, err
 	}

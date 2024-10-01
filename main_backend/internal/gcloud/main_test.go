@@ -51,6 +51,7 @@ func TestPresignUploadURL(t *testing.T) {
 	}
 	req.Header.Set("Content-Type", "text/plain")
 
+	t.Logf("Uploading to %s", url)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

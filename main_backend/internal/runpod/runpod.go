@@ -153,12 +153,16 @@ func RunSync(workerURL string, runRequest RunRequest) (*SyncRunResponse, error) 
 
 // }
 
+type BaseStatusResponse struct {
+	DelayTime     int    `json:"delayTime,omitempty"`
+	ExecutionTime int    `json:"executionTime,omitempty"`
+	JobId         string `json:"id"`
+	Status        string `json:"status"`
+}
+
 type StatusResponse struct {
-	DelayTime     int         `json:"delayTime,omitempty"`
-	ExecutionTime int         `json:"executionTime,omitempty"`
-	JobId         string      `json:"id"`
-	Status        string      `json:"status"`
-	Output        interface{} `json:"output,omitempty"`
+	BaseStatusResponse
+	Output interface{} `json:"output,omitempty"`
 }
 
 var ErrEmtpyStatus = errors.New("empty status received")
