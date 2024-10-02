@@ -1,6 +1,7 @@
 package whisper_test
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -12,8 +13,23 @@ var input = whisper.NewWhisperInput(
 	whisper.WithModel(whisper.WhisperModelTiny),
 )
 
+func getRunpodWhisperClient() (*whisper.RunpodWhisperClient, error) {
+	c, err := whisper.NewRunpodWhisperClient(os.Getenv("RUNPOD_API_KEY"), os.Getenv("RUNPOD_WHISPER_URL"))
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
 func TestWhisperRun(t *testing.T) {
-	response, err := whisper.WhisperRun(input, nil, nil, nil)
+	c, err := getRunpodWhisperClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod whisper client: %v", err)
+		return
+	}
+
+	response, err := c.Run(input, nil, nil, nil)
 	if err != nil {
 		t.Errorf("Failed to run job: %v", err)
 	}
@@ -21,7 +37,13 @@ func TestWhisperRun(t *testing.T) {
 }
 
 func TestWhisperRunSync(t *testing.T) {
-	response, err := whisper.WhisperRunSync(input, nil, nil, nil)
+	c, err := getRunpodWhisperClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod whisper client: %v", err)
+		return
+	}
+
+	response, err := c.RunSync(input, nil, nil, nil)
 	if err != nil {
 		t.Errorf("Failed to run job: %v", err)
 	}
@@ -29,11 +51,17 @@ func TestWhisperRunSync(t *testing.T) {
 }
 
 func TestWhisperStatus(t *testing.T) {
-	response, err := whisper.WhisperRun(input, nil, nil, nil)
+	c, err := getRunpodWhisperClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod whisper client: %v", err)
+		return
+	}
+
+	response, err := c.Run(input, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to run job: %v", err)
 	}
-	status, err := whisper.WhisperStatus(response.JobId)
+	status, err := c.Status(response.JobId)
 	if err != nil {
 		t.Fatalf("Failed to get status: %v", err)
 	}
@@ -46,12 +74,18 @@ func TestWhisperStatus(t *testing.T) {
 }
 
 func TestWhisperResult(t *testing.T) {
-	response, err := whisper.WhisperRun(input, nil, nil, nil)
+	c, err := getRunpodWhisperClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod whisper client: %v", err)
+		return
+	}
+
+	response, err := c.Run(input, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to run job: %v", err)
 	}
-	time.Sleep(1 * time.Second)
-	result, err := whisper.WhisperResult(response.JobId)
+	time.Sleep(2 * time.Second)
+	result, err := c.Result(response.JobId)
 	if err != nil {
 		t.Fatalf("Failed to get result: %v", err)
 	}
@@ -59,11 +93,17 @@ func TestWhisperResult(t *testing.T) {
 }
 
 func TestWhisperCancel(t *testing.T) {
-	response, err := whisper.WhisperRun(input, nil, nil, nil)
+	c, err := getRunpodWhisperClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod whisper client: %v", err)
+		return
+	}
+
+	response, err := c.Run(input, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to run job: %v", err)
 	}
-	cancel, err := whisper.WhisperCancel(response.JobId)
+	cancel, err := c.Cancel(response.JobId)
 	if err != nil {
 		t.Fatalf("Failed to cancel job: %v", err)
 	}
@@ -71,7 +111,13 @@ func TestWhisperCancel(t *testing.T) {
 }
 
 func TestWhisperHealthCheck(t *testing.T) {
-	response, err := whisper.WhisperHealthCheck()
+	c, err := getRunpodWhisperClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod whisper client: %v", err)
+		return
+	}
+
+	response, err := c.HealthCheck()
 	if err != nil {
 		t.Fatalf("Failed to health check: %v", err)
 	}
@@ -79,7 +125,13 @@ func TestWhisperHealthCheck(t *testing.T) {
 }
 
 func TestWhisperPurgeQueue(t *testing.T) {
-	response, err := whisper.WhisperPurgeQueue()
+	c, err := getRunpodWhisperClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod whisper client: %v", err)
+		return
+	}
+
+	response, err := c.PurgeQueue()
 	if err != nil {
 		t.Fatalf("Failed to purge queue: %v", err)
 	}

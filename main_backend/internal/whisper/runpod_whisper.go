@@ -3,19 +3,39 @@ package whisper
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/runpod"
-	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/utils"
 )
-
-var RUNPOD_WHISPER_URL = utils.GetEnvAssert("RUNPOD_WHISPER_URL")
 
 type WhisperSyncRunResponse struct {
 	runpod.BaseSyncRunResponse
 	Output WhisperOutput `json:"output"`
 }
 
-func WhisperRun(input WhisperInput, webhook *runpod.WebHook, policy *runpod.ExecutionPolicy, s3Config *runpod.S3Config) (*runpod.AsyncRunResponse, error) {
+type RunpodWhisperClient struct {
+	rpclient         *runpod.RunpodClient
+	RunpodWhisperURL string
+}
+
+var ErrMissingRunpodWhisperURL = fmt.Errorf("runpod whisper URL is required")
+
+func NewRunpodWhisperClient(runpodAPIKey string, runpodWhisperURL string) (*RunpodWhisperClient, error) {
+	rpclient, err := runpod.NewRunpodClient(runpodAPIKey)
+	if err != nil {
+		return nil, err
+	}
+	if runpodWhisperURL == "" {
+		return nil, ErrMissingRunpodWhisperURL
+	}
+
+	return &RunpodWhisperClient{
+		rpclient:         rpclient,
+		RunpodWhisperURL: runpodWhisperURL,
+	}, nil
+}
+
+func (c *RunpodWhisperClient) Run(input WhisperInput, webhook *runpod.WebHook, policy *runpod.ExecutionPolicy, s3Config *runpod.S3Config) (*runpod.AsyncRunResponse, error) {
 	runRequest := runpod.RunRequest{
 		Input: input,
 	}
@@ -32,7 +52,9 @@ func WhisperRun(input WhisperInput, webhook *runpod.WebHook, policy *runpod.Exec
 		runRequest.S3Config = *s3Config
 	}
 
-	response, err := runpod.Run(RUNPOD_WHISPER_URL, runRequest)
+	slog.Info("Running whisper", "request", runRequest)
+
+	response, err := c.rpclient.Run(c.RunpodWhisperURL, runRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +62,7 @@ func WhisperRun(input WhisperInput, webhook *runpod.WebHook, policy *runpod.Exec
 	return response, nil
 }
 
-func WhisperRunSync(input WhisperInput, webhook *runpod.WebHook, policy *runpod.ExecutionPolicy, s3Config *runpod.S3Config) (*WhisperSyncRunResponse, error) {
+func (c *RunpodWhisperClient) RunSync(input WhisperInput, webhook *runpod.WebHook, policy *runpod.ExecutionPolicy, s3Config *runpod.S3Config) (*WhisperSyncRunResponse, error) {
 	runRequest := runpod.RunRequest{
 		Input: input,
 	}
@@ -57,7 +79,7 @@ func WhisperRunSync(input WhisperInput, webhook *runpod.WebHook, policy *runpod.
 		runRequest.S3Config = *s3Config
 	}
 
-	response, err := runpod.RunSync(RUNPOD_WHISPER_URL, runRequest)
+	response, err := c.rpclient.RunSync(c.RunpodWhisperURL, runRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +98,8 @@ func WhisperRunSync(input WhisperInput, webhook *runpod.WebHook, policy *runpod.
 	return &whisperOutput, nil
 }
 
-func WhisperStatus(jobId string) (*WhisperJobStatus, error) {
-	statusResponse, err := runpod.Status(RUNPOD_WHISPER_URL, jobId)
+func (c *RunpodWhisperClient) Status(jobId string) (*WhisperJobStatus, error) {
+	statusResponse, err := c.rpclient.Status(c.RunpodWhisperURL, jobId)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +134,8 @@ func (e *ErrJobFailed) Error() string {
 
 var JobInProgress = &ErrJobInProgress{}
 
-func WhisperResult(jobId string) (*WhisperOutput, error) {
-	resultResponse, err := runpod.Status(RUNPOD_WHISPER_URL, jobId)
+func (c *RunpodWhisperClient) Result(jobId string) (*WhisperOutput, error) {
+	resultResponse, err := c.rpclient.Status(c.RunpodWhisperURL, jobId)
 	if err != nil {
 		return nil, err
 	}
@@ -142,24 +164,24 @@ func WhisperResult(jobId string) (*WhisperOutput, error) {
 	return &whisperOutput, nil
 }
 
-func WhisperCancel(jobId string) (*runpod.CancelResponse, error) {
-	cancelResponse, err := runpod.Cancel(RUNPOD_WHISPER_URL, jobId)
+func (c *RunpodWhisperClient) Cancel(jobId string) (*runpod.CancelResponse, error) {
+	cancelResponse, err := c.rpclient.Cancel(c.RunpodWhisperURL, jobId)
 	if err != nil {
 		return nil, err
 	}
 	return cancelResponse, nil
 }
 
-func WhisperHealthCheck() (*runpod.HealthCheckResponse, error) {
-	healthCheckResponse, err := runpod.HealthCheck(RUNPOD_WHISPER_URL)
+func (c *RunpodWhisperClient) HealthCheck() (*runpod.HealthCheckResponse, error) {
+	healthCheckResponse, err := c.rpclient.HealthCheck(c.RunpodWhisperURL)
 	if err != nil {
 		return nil, err
 	}
 	return healthCheckResponse, nil
 }
 
-func WhisperPurgeQueue() (*runpod.PurgeQueueResponse, error) {
-	purgeQueueResponse, err := runpod.PurgeQueue(RUNPOD_WHISPER_URL)
+func (c *RunpodWhisperClient) PurgeQueue() (*runpod.PurgeQueueResponse, error) {
+	purgeQueueResponse, err := c.rpclient.PurgeQueue(c.RunpodWhisperURL)
 	if err != nil {
 		return nil, err
 	}

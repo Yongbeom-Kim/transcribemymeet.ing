@@ -25,16 +25,16 @@ var RUNPOD_API_KEY = utils.GetEnvAssert("RUNPOD_API_KEY")
 
 type WebHook string
 type ExecutionPolicy struct {
-	Timeout    int `json:"executionTimeout"`
-	Priority   int `json:"priority"`
-	TimeToLive int `json:"ttl"`
+	Timeout    int `json:"executionTimeout,omitempty"`
+	Priority   int `json:"priority,omitempty"`
+	TimeToLive int `json:"ttl,omitempty"`
 }
 
 type S3Config struct {
-	AccessId     string `json:"accessId"`
-	AccessSecret string `json:"accessSecret"`
-	BucketName   string `json:"bucketName"`
-	EndpointURL  string `json:"endpointUrl"`
+	AccessId     string `json:"accessId,omitempty"`
+	AccessSecret string `json:"accessSecret,omitempty"`
+	BucketName   string `json:"bucketName,omitempty"`
+	EndpointURL  string `json:"endpointUrl,omitempty"`
 }
 
 type RunRequest struct {
@@ -61,21 +61,35 @@ type SyncRunResponse struct {
 	Output map[string]interface{} `json:"output"`
 }
 
-func Run(workerURL string, runRequest RunRequest) (*AsyncRunResponse, error) {
-	slog.Info("Running job", "workerURL", workerURL)
+type RunpodClient struct {
+	RunpodAPIKey string
+}
+
+var ErrMissingAPIKey = errors.New("no runpod api key provided")
+
+func NewRunpodClient(RunpodAPIKey string) (*RunpodClient, error) {
+	if RunpodAPIKey == "" {
+		return nil, ErrMissingAPIKey
+	}
+	return &RunpodClient{
+		RunpodAPIKey: RunpodAPIKey,
+	}, nil
+}
+
+func (c *RunpodClient) Run(workerURL string, runRequest RunRequest) (*AsyncRunResponse, error) {
 	jsonData, err := json.Marshal(runRequest)
+	slog.Info("Running job", "workerURL", workerURL, "jsonData", jsonData)
 	if err != nil {
 		slog.Error("Error marshalling run request", "error", err)
 		return nil, err
 	}
-
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/run", workerURL), bytes.NewBuffer(jsonData))
 	if err != nil {
 		slog.Error("Error creating run request", "error", err)
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.RunpodAPIKey))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -102,7 +116,7 @@ func Run(workerURL string, runRequest RunRequest) (*AsyncRunResponse, error) {
 	return &runResponse, nil
 }
 
-func RunSync(workerURL string, runRequest RunRequest) (*SyncRunResponse, error) {
+func (c *RunpodClient) RunSync(workerURL string, runRequest RunRequest) (*SyncRunResponse, error) {
 	slog.Info("Running job synchronously", "workerURL", workerURL)
 	jsonData, err := json.Marshal(runRequest)
 	if err != nil {
@@ -116,7 +130,7 @@ func RunSync(workerURL string, runRequest RunRequest) (*SyncRunResponse, error) 
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.RunpodAPIKey))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -161,14 +175,14 @@ type StatusResponse struct {
 
 var ErrEmtpyStatus = errors.New("empty status received")
 
-func Status(workerURL string, jobId string) (*StatusResponse, error) {
+func (c *RunpodClient) Status(workerURL string, jobId string) (*StatusResponse, error) {
 	slog.Info("Getting status", "workerURL", workerURL, "jobId", jobId)
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/status/%s", workerURL, jobId), nil)
 	if err != nil {
 		slog.Error("Error creating status request", "error", err)
 		return nil, err
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.RunpodAPIKey))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -211,14 +225,14 @@ type CancelResponse struct {
 	Status string `json:"status"`
 }
 
-func Cancel(workerURL string, jobId string) (*CancelResponse, error) {
+func (c *RunpodClient) Cancel(workerURL string, jobId string) (*CancelResponse, error) {
 	slog.Info("Cancelling job", "workerURL", workerURL, "jobId", jobId)
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/cancel/%s", workerURL, jobId), nil)
 	if err != nil {
 		slog.Error("Error creating cancel request", "error", err)
 		return nil, err
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.RunpodAPIKey))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -263,13 +277,13 @@ type HealthCheckResponse struct {
 	} `json:"workers"`
 }
 
-func HealthCheck(workerURL string) (*HealthCheckResponse, error) {
+func (c *RunpodClient) HealthCheck(workerURL string) (*HealthCheckResponse, error) {
 	slog.Info("Checking health", "workerURL", workerURL)
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/health", workerURL), nil)
 	if err != nil {
 		slog.Error("Error creating health check request", "error", err)
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.RunpodAPIKey))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -301,14 +315,14 @@ type PurgeQueueResponse struct {
 	Status      string `json:"status"`
 }
 
-func PurgeQueue(workerURL string) (*PurgeQueueResponse, error) {
+func (c *RunpodClient) PurgeQueue(workerURL string) (*PurgeQueueResponse, error) {
 	slog.Info("Purging queue", "workerURL", workerURL)
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/purge-queue", workerURL), nil)
 	if err != nil {
 		slog.Error("Error creating purge queue request", "error", err)
 		return nil, err
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.RunpodAPIKey))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

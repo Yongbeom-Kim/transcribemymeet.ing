@@ -100,6 +100,8 @@ Loop:
 		t.Fatalf("Status code: %v", resp.StatusCode)
 	}
 
+	t.Logf("Response: %s", string(body))
+
 	var resultResponse struct {
 		Output struct {
 			Segments []interface{} `json:"segments"`
@@ -111,7 +113,7 @@ Loop:
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 	if len(resultResponse.Output.Segments) == 0 {
-		t.Fatalf("No segments found in result")
+		t.Fatalf("No segments found in result: %v", resultResponse)
 	}
 	t.Logf("Result: %v", resultResponse)
 }

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/whisper"
 )
@@ -15,28 +16,43 @@ type StartTranscriptionResponse struct {
 	JobId string `json:"job_id"`
 }
 
+func getRunpodWhisperClient() (*whisper.RunpodWhisperClient, error) {
+	return whisper.NewRunpodWhisperClient(os.Getenv("RUNPOD_API_KEY"), os.Getenv("RUNPOD_WHISPER_URL"))
+}
+
 func StartTranscription(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Starting transcription")
+	whisperClient, err := getRunpodWhisperClient()
+	if err != nil {
+		slog.Error("Failed to get RunpodWhisperClient", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	var reqBody StartTranscriptionRequest
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
+		slog.Error("Failed to read request body", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = json.Unmarshal(body, &reqBody)
 	if err != nil {
+		slog.Error("Failed to unmarshal request body", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	slog.Info("Unmarshaled request body", "body", reqBody)
 
-	res, err := whisper.WhisperRun(whisper.WhisperInput(reqBody), nil, nil, nil)
+	res, err := whisperClient.Run(whisper.WhisperInput(reqBody), nil, nil, nil)
 	if res == nil {
+		slog.Error("Received nil response from WhisperRun")
 		http.Error(w, "Received nil response from WhisperRun", http.StatusInternalServerError)
 		return
 	}
 	if err != nil {
+		slog.Error("Failed to run Whisper", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -45,6 +61,7 @@ func StartTranscription(w http.ResponseWriter, r *http.Request) {
 		JobId: res.JobId,
 	})
 	if err != nil {
+		slog.Error("Failed to marshal response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -62,14 +79,23 @@ type GetTranscriptionStatusResponse struct {
 }
 
 func GetTranscriptionStatus(w http.ResponseWriter, r *http.Request) {
+	whisperClient, err := getRunpodWhisperClient()
+	if err != nil {
+		slog.Error("Failed to get RunpodWhisperClient", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	jobId := r.PathValue("job_id")
 	if jobId == "" {
+		slog.Error("job_id is required")
 		http.Error(w, "job_id is required", http.StatusBadRequest)
 		return
 	}
 
-	status, err := whisper.WhisperStatus(jobId)
+	status, err := whisperClient.Status(jobId)
 	if err != nil {
+		slog.Error("Failed to get status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -90,34 +116,34 @@ type GetTranscriptionResultResponse struct {
 }
 
 func GetTranscriptionResult(w http.ResponseWriter, r *http.Request) {
-	// jobId := r.PathValue("job_id")
-	// if jobId == "" {
-	// 	http.Error(w, "job_id is required", http.StatusBadRequest)
-	// 	return
-	// }
+	slog.Info("Getting transcription result")
+	whisperClient, err := getRunpodWhisperClient()
+	if err != nil {
+		slog.Error("Failed to get RunpodWhisperClient", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	// result, err := whisper.WhisperStatus(jobId)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
+	jobId := r.PathValue("job_id")
+	if jobId == "" {
+		slog.Error("job_id is required")
+		http.Error(w, "job_id is required", http.StatusBadRequest)
+		return
+	}
 
-	// if result.Status != runpod.StatusComplete {
-	// 	w.WriteHeader(http.StatusAccepted)
-	// 	return
-	// }
+	result, err := whisperClient.Result(jobId)
+	if err != nil {
+		slog.Error("Failed to get result", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	// if len(result.Output.Segments) == 0 {
-	// 	http.Error(w, "Something went wrong. Output is empty", http.StatusInternalServerError)
-	// 	return
-	// }
+	resBody := GetTranscriptionResultResponse{
+		Output: *result,
+	}
 
-	// resBody := GetTranscriptionResultResponse{
-	// 	Output: result.Output,
-	// }
-
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusOK)
-	// json.NewEncoder(w).Encode(resBody)
-	panic("Not implemented")
+	slog.Info("Writing transcription result to client", "response", resBody)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resBody)
 }

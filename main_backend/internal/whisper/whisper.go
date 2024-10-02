@@ -23,18 +23,20 @@ const (
 	WhisperTranscriptionFormatSRT           = "srt"
 	WhisperTranscriptionFormatVTT           = "vtt"
 
-	WhisperTranslationFormatPlainText     = "plain_text"
-	WhisperTranslationFormatFormattedText = "formatted_text"
-	WhisperTranslationFormatSRT           = "srt"
-	WhisperTranslationFormatVTT           = "vtt"
+	// For some reason, this causes the whisper model to not work
+	// WhisperTranslationFormatPlainText     = "plain_text"
+	// WhisperTranslationFormatFormattedText = "formatted_text"
+	// WhisperTranslationFormatSRT           = "srt"
+	// WhisperTranslationFormatVTT           = "vtt"
 )
 
 type WhisperInput struct {
-	AudioURL                       string  `json:"audio_url"`
-	Model                          string  `json:"model"`
-	TranscriptionFormat            string  `json:"transcription,omitempty"`
-	TranslateToEnglish             bool    `json:"translate,omitempty"`
-	TranslationFormat              string  `json:"translation,omitempty"`
+	AudioURL            string `json:"audio"`
+	Model               string `json:"model"`
+	TranscriptionFormat string `json:"transcription,omitempty"`
+	// For some reason, `translate` causes the whisper model to not work
+	// TranslateToEnglish             bool    `json:"translate,omitempty"`
+	// TranslationFormat              string  `json:"translation,omitempty"`
 	Language                       string  `json:"language,omitempty"`
 	Temperature                    float64 `json:"temperature,omitempty"`
 	BestOf                         int     `json:"best_of,omitempty"`
@@ -68,17 +70,17 @@ func WithTranscriptionFormat(format string) WhisperInputOption {
 	}
 }
 
-func WithTranslateToEnglish(translate bool) WhisperInputOption {
-	return func(w *WhisperInput) {
-		w.TranslateToEnglish = translate
-	}
-}
+// func WithTranslateToEnglish(translate bool) WhisperInputOption {
+// 	return func(w *WhisperInput) {
+// 		w.TranslateToEnglish = translate
+// 	}
+// }
 
-func WithTranslationFormat(format string) WhisperInputOption {
-	return func(w *WhisperInput) {
-		w.TranslationFormat = format
-	}
-}
+// func WithTranslationFormat(format string) WhisperInputOption {
+// 	return func(w *WhisperInput) {
+// 		w.TranslationFormat = format
+// 	}
+// }
 
 func WithLanguage(lang string) WhisperInputOption {
 	return func(w *WhisperInput) {
@@ -175,8 +177,9 @@ func NewWhisperInput(AudioURL string, options ...WhisperInputOption) WhisperInpu
 		AudioURL:            "",
 		Model:               WhisperModelBase,
 		TranscriptionFormat: WhisperTranscriptionFormatPlainText,
-		TranslateToEnglish:  false,
-		TranslationFormat:   WhisperTranscriptionFormatPlainText,
+		// For some reason, `translate` causes the whisper model to not work
+		// TranslateToEnglish:  false,
+		// TranslationFormat:   WhisperTranscriptionFormatPlainText,
 		// Default is None
 		// Language:                       nil,
 		Temperature: 0,
@@ -195,6 +198,7 @@ func NewWhisperInput(AudioURL string, options ...WhisperInputOption) WhisperInpu
 		EnableVad:                      false,
 		WordTimestamps:                 false,
 	}
+	w.AudioURL = AudioURL
 	for _, option := range options {
 		option(&w)
 	}

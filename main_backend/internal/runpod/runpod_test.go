@@ -1,15 +1,28 @@
 package runpod_test
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/runpod"
-	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/whisper"
+	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/utils"
 )
 
+func getRunpodClient() (*runpod.RunpodClient, error) {
+	return runpod.NewRunpodClient(os.Getenv("RUNPOD_API_KEY"))
+}
+
+var RUNPOD_WHISPER_URL = utils.GetEnvAssert("RUNPOD_WHISPER_URL")
+
 func TestRun(t *testing.T) {
-	runResponse, err := runpod.Run(whisper.RUNPOD_WHISPER_URL, runpod.RunRequest{
+	rpclient, err := getRunpodClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod client: %v", err)
+		return
+	}
+
+	runResponse, err := rpclient.Run(RUNPOD_WHISPER_URL, runpod.RunRequest{
 		Input: map[string]string{
 			"audio": "https://github.com/runpod-workers/sample-inputs/raw/main/audio/gettysburg.wav",
 			"model": "tiny",
@@ -29,7 +42,13 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunSync(t *testing.T) {
-	runResponse, err := runpod.RunSync(whisper.RUNPOD_WHISPER_URL, runpod.RunRequest{
+	rpclient, err := getRunpodClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod client: %v", err)
+		return
+	}
+
+	runResponse, err := rpclient.RunSync(RUNPOD_WHISPER_URL, runpod.RunRequest{
 		Input: map[string]string{
 			"audio": "https://github.com/runpod-workers/sample-inputs/raw/main/audio/gettysburg.wav",
 			"model": "tiny",
@@ -49,7 +68,7 @@ func TestRunSync(t *testing.T) {
 	// Wait for job to complete
 	for {
 		time.Sleep(1 * time.Second)
-		statusResponse, err := runpod.Status(whisper.RUNPOD_WHISPER_URL, runResponse.JobId)
+		statusResponse, err := rpclient.Status(RUNPOD_WHISPER_URL, runResponse.JobId)
 		if err != nil {
 			t.Fatalf("Failed to job status: %v", err)
 		}
@@ -60,7 +79,13 @@ func TestRunSync(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	runResponse, err := runpod.Run(whisper.RUNPOD_WHISPER_URL, runpod.RunRequest{
+	rpclient, err := getRunpodClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod client: %v", err)
+		return
+	}
+
+	runResponse, err := rpclient.Run(RUNPOD_WHISPER_URL, runpod.RunRequest{
 		Input: map[string]string{
 			"audio": "https://github.com/runpod-workers/sample-inputs/raw/main/audio/gettysburg.wav",
 			"model": "tiny",
@@ -70,7 +95,7 @@ func TestStatus(t *testing.T) {
 		t.Errorf("Failed to run job: %v", err)
 	}
 
-	statusResponse, err := runpod.Status(whisper.RUNPOD_WHISPER_URL, runResponse.JobId)
+	statusResponse, err := rpclient.Status(RUNPOD_WHISPER_URL, runResponse.JobId)
 	if err != nil {
 		t.Errorf("Failed to get status: %v", err)
 	}
@@ -83,7 +108,13 @@ func TestStatus(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
-	runResponse, err := runpod.Run(whisper.RUNPOD_WHISPER_URL, runpod.RunRequest{
+	rpclient, err := getRunpodClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod client: %v", err)
+		return
+	}
+
+	runResponse, err := rpclient.Run(RUNPOD_WHISPER_URL, runpod.RunRequest{
 		Input: map[string]string{
 			"audio": "https://github.com/runpod-workers/sample-inputs/raw/main/audio/gettysburg.wav",
 			"model": "tiny",
@@ -94,7 +125,7 @@ func TestCancel(t *testing.T) {
 	}
 	t.Logf("Run response: %v", runResponse)
 
-	cancelResponse, err := runpod.Cancel(whisper.RUNPOD_WHISPER_URL, runResponse.JobId)
+	cancelResponse, err := rpclient.Cancel(RUNPOD_WHISPER_URL, runResponse.JobId)
 	if err != nil {
 		t.Errorf("Failed to cancel job: %v", err)
 	}
@@ -102,7 +133,13 @@ func TestCancel(t *testing.T) {
 }
 
 func TestHealthCheck(t *testing.T) {
-	healthCheckResponse, err := runpod.HealthCheck(whisper.RUNPOD_WHISPER_URL)
+	rpclient, err := getRunpodClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod client: %v", err)
+		return
+	}
+
+	healthCheckResponse, err := rpclient.HealthCheck(RUNPOD_WHISPER_URL)
 	if err != nil {
 		t.Errorf("Failed to health check: %v", err)
 	}
@@ -110,7 +147,13 @@ func TestHealthCheck(t *testing.T) {
 }
 
 func TestPurgeQueue(t *testing.T) {
-	purgeResponse, err := runpod.PurgeQueue(whisper.RUNPOD_WHISPER_URL)
+	rpclient, err := getRunpodClient()
+	if err != nil {
+		t.Fatalf("Failed to get runpod client: %v", err)
+		return
+	}
+
+	purgeResponse, err := rpclient.PurgeQueue(RUNPOD_WHISPER_URL)
 	if err != nil {
 		t.Errorf("Failed to purge queue: %v", err)
 	}

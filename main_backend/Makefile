@@ -14,7 +14,7 @@ test: ## Run tests
 	. ./source.sh && \
 		go test ./...
 
-integration_test: ## Run integration tests
+integration_test: code_build ## Run integration tests
 	. ./source.sh && \
 		cd test && \
 		go test -count=1 ./...
