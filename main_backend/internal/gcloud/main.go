@@ -5,30 +5,21 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/projectpath"
+	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/utils"
 	"google.golang.org/api/option"
 )
 
-func GetEnv(key string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		panic(fmt.Sprintf("%s environment variable is not set", key))
-	}
-	return value
-}
-
 var GetCredentialsFile = sync.OnceValue(func() string {
-	return filepath.Join(projectpath.Root, GetEnv("TF_VAR_backend_identity_key"))
+	return filepath.Join(utils.Root, utils.GetEnvAssert("TF_VAR_backend_identity_key"))
 })
 
 var GetBucket = sync.OnceValue(func() string {
-	return GetEnv("TF_VAR_resource_name")
+	return utils.GetEnvAssert("TF_VAR_resource_name")
 })
 
 func PresignUploadURL(ctx context.Context, key string, duration time.Duration) (string, error) {

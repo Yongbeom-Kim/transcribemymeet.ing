@@ -10,6 +10,7 @@ import (
 	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/cmd/download"
 	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/cmd/transcribe"
 	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/cmd/upload"
+	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/utils"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 	http.HandleFunc("GET /transcribe/status/{job_id}", transcribe.GetTranscriptionStatus)
 	http.HandleFunc("GET /transcribe/result/{job_id}", transcribe.GetTranscriptionResult)
 
-	port := os.Getenv("PORT")
+	port := utils.GetEnvAssert("PORT")
 	portInt, err := strconv.Atoi(port)
 	if err != nil {
 		fmt.Println(err)

@@ -12,7 +12,6 @@ destroy: infra_destroy ## Destroy the backend infrastructure
 
 test: ## Run tests
 	. ./source.sh && \
-		TF_VAR_backend_identity_key=$$(realpath $${TF_VAR_backend_identity_key}) && \
 		go test ./...
 
 integration_test: ## Run integration tests

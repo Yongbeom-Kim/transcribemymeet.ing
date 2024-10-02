@@ -1,4 +1,4 @@
-package projectpath
+package utils
 
 //https://stackoverflow.com/questions/31873396/is-it-possible-to-get-the-current-root-of-package-structure-as-a-string-in-golan
 

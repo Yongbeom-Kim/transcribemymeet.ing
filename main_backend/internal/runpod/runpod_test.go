@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/runpod"
+	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/whisper"
 )
 
 func TestRun(t *testing.T) {
-	runResponse, err := runpod.Run(runpod.RUNPOD_WHISPER_URL(), runpod.RunRequest{
+	runResponse, err := runpod.Run(whisper.RUNPOD_WHISPER_URL, runpod.RunRequest{
 		Input: map[string]string{
 			"audio": "https://github.com/runpod-workers/sample-inputs/raw/main/audio/gettysburg.wav",
 			"model": "tiny",
@@ -28,7 +29,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunSync(t *testing.T) {
-	runResponse, err := runpod.RunSync(runpod.RUNPOD_WHISPER_URL(), runpod.RunRequest{
+	runResponse, err := runpod.RunSync(whisper.RUNPOD_WHISPER_URL, runpod.RunRequest{
 		Input: map[string]string{
 			"audio": "https://github.com/runpod-workers/sample-inputs/raw/main/audio/gettysburg.wav",
 			"model": "tiny",
@@ -48,7 +49,7 @@ func TestRunSync(t *testing.T) {
 	// Wait for job to complete
 	for {
 		time.Sleep(1 * time.Second)
-		statusResponse, err := runpod.Status(runpod.RUNPOD_WHISPER_URL(), runResponse.JobId)
+		statusResponse, err := runpod.Status(whisper.RUNPOD_WHISPER_URL, runResponse.JobId)
 		if err != nil {
 			t.Fatalf("Failed to job status: %v", err)
 		}
@@ -59,7 +60,7 @@ func TestRunSync(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	runResponse, err := runpod.Run(runpod.RUNPOD_WHISPER_URL(), runpod.RunRequest{
+	runResponse, err := runpod.Run(whisper.RUNPOD_WHISPER_URL, runpod.RunRequest{
 		Input: map[string]string{
 			"audio": "https://github.com/runpod-workers/sample-inputs/raw/main/audio/gettysburg.wav",
 			"model": "tiny",
@@ -69,7 +70,7 @@ func TestStatus(t *testing.T) {
 		t.Errorf("Failed to run job: %v", err)
 	}
 
-	statusResponse, err := runpod.Status(runpod.RUNPOD_WHISPER_URL(), runResponse.JobId)
+	statusResponse, err := runpod.Status(whisper.RUNPOD_WHISPER_URL, runResponse.JobId)
 	if err != nil {
 		t.Errorf("Failed to get status: %v", err)
 	}
@@ -82,7 +83,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
-	runResponse, err := runpod.Run(runpod.RUNPOD_WHISPER_URL(), runpod.RunRequest{
+	runResponse, err := runpod.Run(whisper.RUNPOD_WHISPER_URL, runpod.RunRequest{
 		Input: map[string]string{
 			"audio": "https://github.com/runpod-workers/sample-inputs/raw/main/audio/gettysburg.wav",
 			"model": "tiny",
@@ -93,7 +94,7 @@ func TestCancel(t *testing.T) {
 	}
 	t.Logf("Run response: %v", runResponse)
 
-	cancelResponse, err := runpod.Cancel(runpod.RUNPOD_WHISPER_URL(), runResponse.JobId)
+	cancelResponse, err := runpod.Cancel(whisper.RUNPOD_WHISPER_URL, runResponse.JobId)
 	if err != nil {
 		t.Errorf("Failed to cancel job: %v", err)
 	}
@@ -101,7 +102,7 @@ func TestCancel(t *testing.T) {
 }
 
 func TestHealthCheck(t *testing.T) {
-	healthCheckResponse, err := runpod.HealthCheck(runpod.RUNPOD_WHISPER_URL())
+	healthCheckResponse, err := runpod.HealthCheck(whisper.RUNPOD_WHISPER_URL)
 	if err != nil {
 		t.Errorf("Failed to health check: %v", err)
 	}
@@ -109,7 +110,7 @@ func TestHealthCheck(t *testing.T) {
 }
 
 func TestPurgeQueue(t *testing.T) {
-	purgeResponse, err := runpod.PurgeQueue(runpod.RUNPOD_WHISPER_URL())
+	purgeResponse, err := runpod.PurgeQueue(whisper.RUNPOD_WHISPER_URL)
 	if err != nil {
 		t.Errorf("Failed to purge queue: %v", err)
 	}

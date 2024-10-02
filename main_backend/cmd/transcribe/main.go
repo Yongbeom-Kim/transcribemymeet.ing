@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/runpod"
+	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/whisper"
 )
 
-type StartTranscriptionRequest runpod.WhisperModelInput
+type StartTranscriptionRequest whisper.WhisperInput
 
 type StartTranscriptionResponse struct {
 	JobId string `json:"job_id"`
@@ -31,7 +31,7 @@ func StartTranscription(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("Unmarshaled request body", "body", reqBody)
 
-	res, err := runpod.WhisperRun(runpod.WhisperModelInput(reqBody), nil, nil, nil)
+	res, err := whisper.WhisperRun(whisper.WhisperInput(reqBody), nil, nil, nil)
 	if res == nil {
 		http.Error(w, "Received nil response from WhisperRun", http.StatusInternalServerError)
 		return
@@ -68,7 +68,7 @@ func GetTranscriptionStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, err := runpod.WhisperStatus(jobId)
+	status, err := whisper.WhisperStatus(jobId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -86,37 +86,38 @@ func GetTranscriptionStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 type GetTranscriptionResultResponse struct {
-	Output runpod.WhisperModelOutput `json:"output"`
+	Output whisper.WhisperOutput `json:"output"`
 }
 
 func GetTranscriptionResult(w http.ResponseWriter, r *http.Request) {
-	jobId := r.PathValue("job_id")
-	if jobId == "" {
-		http.Error(w, "job_id is required", http.StatusBadRequest)
-		return
-	}
+	// jobId := r.PathValue("job_id")
+	// if jobId == "" {
+	// 	http.Error(w, "job_id is required", http.StatusBadRequest)
+	// 	return
+	// }
 
-	result, err := runpod.WhisperStatus(jobId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// result, err := whisper.WhisperStatus(jobId)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	if result.Status != runpod.StatusComplete {
-		w.WriteHeader(http.StatusAccepted)
-		return
-	}
+	// if result.Status != runpod.StatusComplete {
+	// 	w.WriteHeader(http.StatusAccepted)
+	// 	return
+	// }
 
-	if len(result.Output.Segments) == 0 {
-		http.Error(w, "Something went wrong. Output is empty", http.StatusInternalServerError)
-		return
-	}
+	// if len(result.Output.Segments) == 0 {
+	// 	http.Error(w, "Something went wrong. Output is empty", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	resBody := GetTranscriptionResultResponse{
-		Output: result.Output,
-	}
+	// resBody := GetTranscriptionResultResponse{
+	// 	Output: result.Output,
+	// }
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resBody)
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
+	// json.NewEncoder(w).Encode(resBody)
+	panic("Not implemented")
 }

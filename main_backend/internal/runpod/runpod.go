@@ -8,8 +8,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
-	"sync"
+
+	"github.com/Yongbeom-Kim/transcribemymeet.ing/main_backend/internal/utils"
 )
 
 const (
@@ -21,13 +21,7 @@ const (
 	StatusTimeout  = "TIMED_OUT"   // Job expired before processing or worker failed to report result in time
 )
 
-var RUNPOD_API_KEY = sync.OnceValue(func() string {
-	key := os.Getenv("RUNPOD_API_KEY")
-	if key == "" {
-		panic("RUNPOD_API_KEY environment variable is not set")
-	}
-	return key
-})
+var RUNPOD_API_KEY = utils.GetEnvAssert("RUNPOD_API_KEY")
 
 type WebHook string
 type ExecutionPolicy struct {
@@ -81,7 +75,7 @@ func Run(workerURL string, runRequest RunRequest) (*AsyncRunResponse, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY()))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -122,7 +116,7 @@ func RunSync(workerURL string, runRequest RunRequest) (*SyncRunResponse, error) 
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY()))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -174,7 +168,7 @@ func Status(workerURL string, jobId string) (*StatusResponse, error) {
 		slog.Error("Error creating status request", "error", err)
 		return nil, err
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY()))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -224,7 +218,7 @@ func Cancel(workerURL string, jobId string) (*CancelResponse, error) {
 		slog.Error("Error creating cancel request", "error", err)
 		return nil, err
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY()))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -275,7 +269,7 @@ func HealthCheck(workerURL string) (*HealthCheckResponse, error) {
 	if err != nil {
 		slog.Error("Error creating health check request", "error", err)
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY()))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -314,7 +308,7 @@ func PurgeQueue(workerURL string) (*PurgeQueueResponse, error) {
 		slog.Error("Error creating purge queue request", "error", err)
 		return nil, err
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY()))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", RUNPOD_API_KEY))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
